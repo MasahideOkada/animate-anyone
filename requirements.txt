@@ -1,0 +1,4 @@
+torch torchvision --index-url https://download.pytorch.org/whl/cu118
+accelerate==0.25.0
+transformers==4.35.2
+diffusers==0.24.0
