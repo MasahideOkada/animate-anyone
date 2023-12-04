@@ -40,10 +40,10 @@ class PoseGuider(ModelMixin, ConfigMixin):
         match activation.lower():
             case "relu":
                 self.act_fn = F.relu
-            case "silu":
+            case "silu" | "swish":
                 self.act_fn = F.silu
             case _:
-                raise NotImplementedError("`activation` must be `relu` or `silu`")
+                raise NotImplementedError("`activation` must be `relu`, `silu` or `swish`")
 
     def forward(self, guiding: torch.FloatTensor) -> torch.FloatTensor:
         embedding = self.conv_in(guiding)
