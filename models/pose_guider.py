@@ -4,7 +4,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-class PoseGuider(nn.Module):
+from diffusers.configuration_utils import ConfigMixin, register_to_config
+from diffusers.models.modeling_utils import ModelMixin
+
+class PoseGuider(ModelMixin, ConfigMixin):
+    @register_to_config
     def __init__(
         self,
         guiding_embedding_channels: int,
