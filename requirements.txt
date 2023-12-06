@@ -1,4 +1,9 @@
-torch torchvision --index-url https://download.pytorch.org/whl/cu118
+numpy>=1.17
+torch==2.0.1
+torchvision==0.15.2
 accelerate==0.25.0
 transformers==4.35.2
 diffusers==0.24.0
+einops==0.7.0
+triton==2.0.0
+xformers==0.0.22
