@@ -1,9 +1,10 @@
 numpy>=1.17
 torch==2.0.1
 torchvision==0.15.2
+triton==2.0.0
+xformers==0.0.22
+safetensors=0.3.3
 accelerate==0.25.0
 transformers==4.35.2
 diffusers==0.24.0
 einops==0.7.0
-triton==2.0.0
-xformers==0.0.22
