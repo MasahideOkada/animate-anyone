@@ -217,12 +217,12 @@ class BasicTransformerBlock(nn.Module):
         class_labels: Optional[torch.LongTensor] = None,
     ) -> Tuple[torch.FloatTensor, torch.FloatTensor]:
         """
-        hidden_states: (batch_frames, channel, height, width)
+        hidden_states: (batch_frames, height*width, inner_dim)
         reference_hidden_states: (batch_size, channel, height, width)
         """
         # Notice that normalization is always applied before the real computation in the following blocks.
         # 0. Self-Attention
-        batch_frames, channel, height, width = hidden_states.shape
+        batch_frames, seq_len, inner_dim = hidden_states.shape
 
         if (reference_hidden_states is None) and num_frames != 1:
             raise ValueError("`num_frames` must be `1` when `reference_hidden_states` is None")
@@ -230,12 +230,16 @@ class BasicTransformerBlock(nn.Module):
         res_hidden_states = hidden_states
         concat_reference_states = (reference_hidden_states is not None) and not self.only_cross_attention
         if concat_reference_states:
+            batch_size, channel, height, width = reference_hidden_states.shape
+            num_frames = batch_frames // batch_size
             # Copy reference features along frame dimension
             reference_hidden_states = reference_hidden_states.unsqueeze(1)
             reference_hidden_states = reference_hidden_states.repeat((1, num_frames, 1, 1, 1))
             reference_hidden_states = reference_hidden_states.reshape(batch_frames, channel, height, width)
             # Concat along w dimension
+            hidden_states = hidden_states.reshape(batch_frames, height, width, inner_dim).permute(0, 3, 1, 2).contiguous()
             hidden_states = torch.cat([hidden_states, reference_hidden_states], dim=-1)
+            hidden_states = hidden_states.permute(0, 2, 3, 1).reshape(batch_frames, seq_len, inner_dim)
 
         if self.use_ada_layer_norm:
             norm_hidden_states = self.norm1(hidden_states, timestep)
