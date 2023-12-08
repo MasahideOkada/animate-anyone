@@ -1125,7 +1125,21 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
         with open(config_file, "r") as f:
             config = json.load(f)
 
+        # motion module v2 configuration
         config["use_motion_module"] = True
+        config["motion_module_resolutions"] = (1, 2, 4, 8)
+        config["motion_module_mid_block"] = True
+        config["motion_module_decoder_only"] = False
+        config["motion_module_type"] = "Vanilla"
+        config["motion_module_kwargs"] = {
+                "num_attention_heads": 8,
+                "num_transformer_block": 1,
+                "attention_block_types": ("Temporal_Self", "Temporal_Self"),
+                "temporal_position_encoding": True,
+                "temporal_position_encoding_max_len": 32,
+                "temporal_attention_dim_div": 1,
+        }
+
         model = cls.from_config(config)
 
         use_safetensors = use_safetensors if isinstance(use_safetensors, bool) else True
