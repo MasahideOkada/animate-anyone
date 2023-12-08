@@ -1,4 +1,4 @@
-# Adapted from https://github.com/guoyww/AnimateDiff/blob/0a8d8efcc89d8a82c6f60f798ce92f43f506785b/animatediff/models/motion_module.py
+# Modified https://github.com/guoyww/AnimateDiff/blob/0a8d8efcc89d8a82c6f60f798ce92f43f506785b/animatediff/models/motion_module.py
 from dataclasses import dataclass
 from typing import List, Optional, Tuple, Union
 
@@ -76,9 +76,9 @@ class VanillaTemporalModule(nn.Module):
         if zero_initialize:
             self.temporal_transformer.proj_out = zero_module(self.temporal_transformer.proj_out)
 
-    def forward(self, input_tensor, temb, encoder_hidden_states, attention_mask=None, anchor_frame_idx=None):
+    def forward(self, input_tensor, temb, encoder_hidden_states, attention_mask=None, video_length=1, anchor_frame_idx=None):
         hidden_states = input_tensor
-        hidden_states = self.temporal_transformer(hidden_states, encoder_hidden_states, attention_mask)
+        hidden_states = self.temporal_transformer(hidden_states, encoder_hidden_states, attention_mask, video_length)
 
         output = hidden_states
         return output
@@ -133,7 +133,7 @@ class TemporalTransformer3DModel(nn.Module):
         )
         self.proj_out = nn.Linear(inner_dim, in_channels)    
     
-    def forward(self, hidden_states, video_length, encoder_hidden_states=None, attention_mask=None):
+    def forward(self, hidden_states, encoder_hidden_states=None, attention_mask=None, video_length=1):
         """
         hidden_states: shape of (batch_size*video_length, channels, height, width)
         """
@@ -141,12 +141,12 @@ class TemporalTransformer3DModel(nn.Module):
         #video_length = hidden_states.shape[2]
         #hidden_states = rearrange(hidden_states, "b c f h w -> (b f) c h w")
 
-        batch, channel, height, weight = hidden_states.shape
+        batch, channel, height, width = hidden_states.shape
         residual = hidden_states
 
         hidden_states = self.norm(hidden_states)
         inner_dim = hidden_states.shape[1]
-        hidden_states = hidden_states.permute(0, 2, 3, 1).reshape(batch, height * weight, inner_dim)
+        hidden_states = hidden_states.permute(0, 2, 3, 1).reshape(batch, height * width, inner_dim)
         hidden_states = self.proj_in(hidden_states)
 
         # Transformer Blocks
@@ -155,7 +155,7 @@ class TemporalTransformer3DModel(nn.Module):
         
         # output
         hidden_states = self.proj_out(hidden_states)
-        hidden_states = hidden_states.reshape(batch, height, weight, inner_dim).permute(0, 3, 1, 2).contiguous()
+        hidden_states = hidden_states.reshape(batch, height, width, inner_dim).permute(0, 3, 1, 2).contiguous()
 
         output = hidden_states + residual
         #output = rearrange(output, "(b f) c h w -> b c f h w", f=video_length)
@@ -293,7 +293,7 @@ class VersatileAttention(Attention):
 
         query = self.to_q(hidden_states)
         dim = query.shape[-1]
-        query = self.reshape_heads_to_batch_dim(query)
+        query = self.head_to_batch_dim(query)
 
         if self.added_kv_proj_dim is not None:
             raise NotImplementedError
@@ -302,25 +302,29 @@ class VersatileAttention(Attention):
         key = self.to_k(encoder_hidden_states)
         value = self.to_v(encoder_hidden_states)
 
-        key = self.reshape_heads_to_batch_dim(key)
-        value = self.reshape_heads_to_batch_dim(value)
+        key = self.head_to_batch_dim(key)
+        value = self.head_to_batch_dim(value)
 
-        if attention_mask is not None:
-            if attention_mask.shape[-1] != query.shape[1]:
-                target_length = query.shape[1]
-                attention_mask = F.pad(attention_mask, (0, target_length), value=0.0)
-                attention_mask = attention_mask.repeat_interleave(self.heads, dim=0)
+        attention_mask = self.prepare_attention_mask(attention_mask, sequence_length, batch_size)        
+        #if attention_mask is not None:
+        #    if attention_mask.shape[-1] != query.shape[1]:
+        #        target_length = query.shape[1]
+        #        attention_mask = F.pad(attention_mask, (0, target_length), value=0.0)
+        #        attention_mask = attention_mask.repeat_interleave(self.heads, dim=0)
 
         # attention, what we cannot get enough of
-        if self._use_memory_efficient_attention_xformers:
-            hidden_states = self._memory_efficient_attention_xformers(query, key, value, attention_mask)
-            # Some versions of xformers return output in fp32, cast it back to the dtype of the input
-            hidden_states = hidden_states.to(query.dtype)
-        else:
-            if self._slice_size is None or query.shape[0] // self._slice_size == 1:
-                hidden_states = self._attention(query, key, value, attention_mask)
-            else:
-                hidden_states = self._sliced_attention(query, key, value, sequence_length, dim, attention_mask)
+        #if self._use_memory_efficient_attention_xformers:
+        #    hidden_states = self._memory_efficient_attention_xformers(query, key, value, attention_mask)
+        #    # Some versions of xformers return output in fp32, cast it back to the dtype of the input
+        #    hidden_states = hidden_states.to(query.dtype)
+        #else:
+        #    if self._slice_size is None or query.shape[0] // self._slice_size == 1:
+        #        hidden_states = self._attention(query, key, value, attention_mask)
+        #    else:
+        #        hidden_states = self._sliced_attention(query, key, value, sequence_length, dim, attention_mask)
+        attention_probs = self.get_attention_scores(query, key, attention_mask)
+        hidden_states = torch.bmm(attention_probs, value)
+        hidden_states = self.batch_to_head_dim(hidden_states)
 
         # linear proj
         hidden_states = self.to_out[0](hidden_states)
