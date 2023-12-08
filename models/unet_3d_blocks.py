@@ -468,7 +468,7 @@ class CrossAttnDownBlock3D(nn.Module):
             
             motion_modules.append(
                 get_motion_module(
-                    in_channels=in_channels,
+                    in_channels=out_channels,
                     motion_module_type=motion_module_type, 
                     motion_module_kwargs=motion_module_kwargs,
                 ) if use_motion_module else None
@@ -635,7 +635,7 @@ class DownBlock3D(nn.Module):
             )
             motion_modules.append(
                 get_motion_module(
-                    in_channels=in_channels,
+                    in_channels=out_channels,
                     motion_module_type=motion_module_type, 
                     motion_module_kwargs=motion_module_kwargs,
                 ) if use_motion_module else None
@@ -793,7 +793,7 @@ class CrossAttnUpBlock3D(nn.Module):
             
             motion_modules.append(
                 get_motion_module(
-                    in_channels=in_channels,
+                    in_channels=out_channels,
                     motion_module_type=motion_module_type, 
                     motion_module_kwargs=motion_module_kwargs,
                 ) if use_motion_module else None
@@ -974,7 +974,7 @@ class UpBlock3D(nn.Module):
 
             motion_modules.append(
                 get_motion_module(
-                    in_channels=in_channels,
+                    in_channels=out_channels,
                     motion_module_type=motion_module_type, 
                     motion_module_kwargs=motion_module_kwargs,
                 ) if use_motion_module else None
