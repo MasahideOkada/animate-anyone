@@ -239,7 +239,7 @@ class BasicTransformerBlock(nn.Module):
             # Concat along w dimension
             hidden_states = hidden_states.reshape(batch_frames, height, width, inner_dim).permute(0, 3, 1, 2).contiguous()
             hidden_states = torch.cat([hidden_states, reference_hidden_states], dim=-1)
-            hidden_states = hidden_states.permute(0, 2, 3, 1).reshape(batch_frames, seq_len, inner_dim)
+            hidden_states = hidden_states.permute(0, 2, 3, 1).reshape(batch_frames, 2 * seq_len, inner_dim)
 
         if self.use_ada_layer_norm:
             norm_hidden_states = self.norm1(hidden_states, timestep)
@@ -281,8 +281,11 @@ class BasicTransformerBlock(nn.Module):
             attn_output = gate_msa * attn_output
         
         if concat_reference_states:
-            # Extract the first half features
-            attn_output, _ = attn_output.chunk(2, dim=-1)
+            batch_size, channel, height, width = reference_hidden_states.shape
+            attn_output = attn_output.reshape(batch_frames, height, 2 * width, inner_dim).contiguous()
+            # Extract the first half features along w dimension
+            attn_output, _ = attn_output.chunk(2, dim=2)
+            attn_output = attn_output.reshape(batch_frames, seq_len, inner_dim)
         
         reference_hidden_states = attn_output
         hidden_states = attn_output + res_hidden_states
