@@ -1,0 +1,2 @@
+MOTION_MODULE_CONFIG_NAME = "config.json"
+MOTION_MODULE_WEIGHTS_NAME = "mm_sd_v15_v2.ckpt"

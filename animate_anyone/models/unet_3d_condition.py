@@ -1114,6 +1114,8 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
         from diffusers.utils import CONFIG_NAME, SAFETENSORS_WEIGHTS_NAME, WEIGHTS_NAME
         import safetensors
 
+        from ..utils.constants import MOTION_MODULE_CONFIG_NAME, MOTION_MODULE_WEIGHTS_NAME
+
         subfolder = kwargs.pop("subfolder", None)
         use_safetensors = kwargs.pop("use_safetensors", None)
 
@@ -1127,19 +1129,14 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
             config = json.load(f)
 
         # motion module v2 configuration
-        config["use_motion_module"] = True
-        config["motion_module_resolutions"] = (1, 2, 4, 8)
-        config["motion_module_mid_block"] = True
-        config["motion_module_decoder_only"] = False
-        config["motion_module_type"] = "Vanilla"
-        config["motion_module_kwargs"] = {
-                "num_attention_heads": 8,
-                "num_transformer_block": 1,
-                "attention_block_types": ("Temporal_Self", "Temporal_Self"),
-                "temporal_position_encoding": True,
-                "temporal_position_encoding_max_len": 32,
-                "temporal_attention_dim_div": 1,
-        }
+        motion_module_config_file = os.path.join(motion_module_path, MOTION_MODULE_CONFIG_NAME)
+        if not os.path.isfile(motion_module_config_file):
+            raise RuntimeError(f"{motion_module_config_file} does not exist")
+        with open(motion_module_config_file, "r") as f:
+            motion_module_config = json.load(f)
+        
+        for k, v in motion_module_config.items():
+            config[k] = v
 
         model = cls.from_config(config)
 
@@ -1168,8 +1165,9 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
             logger.warn(f"unexpected keys:\n{key_list}")
         
         # load motion module weights
+        motion_module_file = os.path.join(motion_module_path, MOTION_MODULE_WEIGHTS_NAME)
         motion_module_state_dict = {}
-        motion_module_state_dict = torch.load(motion_module_path, map_location="cpu")
+        motion_module_state_dict = torch.load(motion_module_file, map_location="cpu")
         motion_module_state_dict = (
             motion_module_state_dict["state_dict"] if "state_dict" in motion_module_state_dict else motion_module_state_dict
         )
