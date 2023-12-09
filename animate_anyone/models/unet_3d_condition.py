@@ -859,7 +859,8 @@ class UNet3DConditionModel(ModelMixin, ConfigMixin, UNet2DConditionLoadersMixin)
 
         if self.time_embed_act is not None:
             emb = self.time_embed_act(emb)
-        
+
+        # copy by the number of frames
         encoder_hidden_states = encoder_hidden_states.repeat_interleave(num_frames, dim=0)
 
         # 2. pre-process
