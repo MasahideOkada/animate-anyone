@@ -45,7 +45,9 @@ class PoseGuider(ModelMixin, ConfigMixin):
             case _:
                 raise NotImplementedError("`activation` must be `relu`, `silu` or `swish`")
 
-    def forward(self, guiding: torch.FloatTensor) -> torch.FloatTensor:
+    def forward(self, guiding: torch.FloatTensor, do_normalize: bool = False) -> torch.FloatTensor:
+        if do_normalize:
+            guiding = 2.0 * guiding - 1.0
         embedding = self.conv_in(guiding)
 
         for block in self.blocks:
