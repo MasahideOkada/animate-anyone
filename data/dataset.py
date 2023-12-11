@@ -79,7 +79,7 @@ class VideoDataset(Dataset):
             video_reader.get_batch(ref_index).asnumpy()
         ).permute(0, 3, 1, 2)
         
-        del video_reader
+        del video_reader, pose_video_reader
 
         return pixel_values, pose_pixel_values, ref_pixel_values
 
