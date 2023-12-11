@@ -781,11 +781,7 @@ def main(args):
     image_logs = None
     for epoch in range(first_epoch, args.num_train_epochs):
         for step, batch in enumerate(train_dataloader):
-            with (
-                accelerator.accumulate(unet),
-                accelerator.accumulate(refnet),
-                accelerator.accumulate(pose_guider),
-            ):
+            with accelerator.accumulate(unet):
                 # Convert images to latent space
                 latents = vae.encode(batch["pixel_values"].to(dtype=weight_dtype)).latent_dist.sample()
                 latents = latents * vae.config.scaling_factor
