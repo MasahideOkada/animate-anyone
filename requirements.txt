@@ -1,5 +1,6 @@
 numpy>=1.17
 Pillow>=9.0.0
+tqdm>=4.60.0
 torch==2.0.1
 torchvision==0.15.2
 triton==2.0.0
@@ -7,5 +8,10 @@ xformers==0.0.22
 safetensors==0.3.3
 accelerate==0.25.0
 transformers==4.35.2
+datasets==2.14.5
 diffusers==0.24.0
 einops==0.7.0
+tensorflow==2.14.0
+tensorboard==2.14.1
+bitsandbytes==0.41.0
+decord==0.6.0
