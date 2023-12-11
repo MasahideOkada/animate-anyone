@@ -4,7 +4,7 @@ This repository is based on [diffusers 0.24.0](https://github.com/huggingface/di
 work in progress
 
 # train 1st stage
-download checkpoints of `stable-diffusion-v1-5` and `clip-vit-base-patch32` and put them in corresponding folders in `checkpoints` directory, then 
+download checkpoints of [stable-diffusion-v1-5](https://huggingface.co/runwayml/stable-diffusion-v1-5) and [clip-vit-base-patch32](https://huggingface.co/openai/clip-vit-base-patch32) and put them in corresponding folders in `checkpoints` directory, then 
 run
 
 ```
@@ -38,4 +38,21 @@ video1
 video2
 video3
 ...
+```
+
+# train 2nd stage
+
+download the checkpoint of AnimateDiff's [motion modules](https://huggingface.co/guoyww/animatediff) and put it in corresponding folders in `checkpoints` directory, then 
+run
+
+```
+accelerate launch --mixed_precision="fp16" train_2nd_stage.py \
+--pretrained_dir "checkpoints" \
+--stage1_dir "animany-stage1" \
+--train_data_dir "data" \
+--csv_path "data.csv" \
+--train_batch_size 4 \
+--num_frames 24 \
+--max_train_steps 10000 \
+--output_dir "animany-stage2"
 ```
