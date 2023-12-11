@@ -134,8 +134,10 @@ class AnimateAnyonePipeline(DiffusionPipeline):
             image = self.image_processor.numpy_to_pt(image)
 
         image = image.to(device=device, dtype=dtype)
-        image_proc = self.clip_processor(image, do_rescale=False, return_tensors="pt")
-        image_embeddings = self.image_encoder(**image_proc).last_hidden_state
+        pixel_values = self.clip_processor(
+            image, do_rescale=False, return_tensors="pt"
+        )["pixel_values"].to(device)
+        image_embeddings = self.image_encoder(pixel_values=pixel_values).last_hidden_state
         image_embeddings = image_embeddings.unsqueeze(1)
 
         # duplicate image embeddings for each generation per prompt, using mps friendly method
