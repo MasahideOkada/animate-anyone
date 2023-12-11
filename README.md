@@ -8,7 +8,7 @@ download checkpoints of [stable-diffusion-v1-5](https://huggingface.co/runwayml/
 run
 
 ```
-accelerate launch --mixed_precision="fp16" train_1st_stage.py \
+$ accelerate launch --mixed_precision="fp16" train_1st_stage.py \
 --pretrained_dir "checkpoints" \
 --train_data_dir "data" \
 --csv_path "data.csv" \
@@ -42,11 +42,11 @@ video3
 
 # train 2nd stage
 
-download the checkpoint of AnimateDiff's [motion modules](https://huggingface.co/guoyww/animatediff) and put it in corresponding folders in `checkpoints` directory, then 
+download the checkpoint of AnimateDiff's [mm_sd_v15_v2.ckpt](https://huggingface.co/guoyww/animatediff/blob/main/mm_sd_v15_v2.ckpt) and put it in corresponding folders in `checkpoints` directory, then 
 run
 
 ```
-accelerate launch --mixed_precision="fp16" train_2nd_stage.py \
+$ accelerate launch --mixed_precision="fp16" train_2nd_stage.py \
 --pretrained_dir "checkpoints" \
 --stage1_dir "animany-stage1" \
 --train_data_dir "data" \
