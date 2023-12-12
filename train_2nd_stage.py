@@ -108,7 +108,7 @@ These are animate-anyone weights trained on {base_model} with new type of condit
 
 
 def parse_args(input_args=None):
-    parser = argparse.ArgumentParser(description="Simple example of a ControlNet training script.")
+    parser = argparse.ArgumentParser(description="Animate Anyone stage2 training script.")
     parser.add_argument(
         "--pretrained_dir",
         type=str,
