@@ -56,3 +56,17 @@ $ accelerate launch --mixed_precision="fp16" train_2nd_stage.py \
 --max_train_steps 10000 \
 --output_dir "animany-stage2"
 ```
+
+# Save ReferenceNet features of image
+Since ReferenceNet is needed only to extract features of a reference image, it will make sense to save those data in advance before the denoising process at inference time. If you want to do it, run
+
+```
+$ python save_reference_features.py \
+--pretrained_dir "checkpoints" \
+--refnet_dir "animany-stage1" \
+--images "reference_image.png" \
+--mixed_precision="fp16" \
+--output_dir "ref-features"
+```
+
+This saves the reference feature data of input images in safetensors format.
