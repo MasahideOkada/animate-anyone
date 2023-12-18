@@ -50,6 +50,7 @@ from diffusers.utils.import_utils import is_xformers_available
 from animate_anyone.models.pose_guider import PoseGuider
 from animate_anyone.models.unet_2d_condition import UNet2DConditionModel
 from animate_anyone.models.unet_3d_condition import UNet3DConditionModel
+from animate_anyone.pipelines.pipeline_animate_anyone import AnimateAnyonePipeline
 from data.dataset import VideoDataset, collate_fn
 
 if is_wandb_available():
@@ -885,8 +886,16 @@ def main(args):
     # Create the pipeline using using the trained modules and save it.
     accelerator.wait_for_everyone()
     if accelerator.is_main_process:
-        unet = accelerator.unwrap_model(unet)
-        unet.save_pretrained(os.path.join(args.output_dir, "unet"))
+        pipe = AnimateAnyonePipeline(
+            vae=vae,
+            image_encoder=image_encoder,
+            unet=accelerator.unwrap_model(unet),
+            referencenet=refnet,
+            pose_guider=pose_guider,
+            scheduler=noise_scheduler,
+            clip_processor=clip_processor,
+        )
+        pipe.save_pretrained(args.output_dir)
 
         if args.push_to_hub:
             save_model_card(
