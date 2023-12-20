@@ -1,5 +1,7 @@
 from typing import Tuple
 
+import numpy as np
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -18,20 +20,18 @@ class PoseGuider(ModelMixin, ConfigMixin):
     ):
         super().__init__()
 
-        self.conv_in = gaussian_module(
-            nn.Conv2d(guiding_channels, block_out_channels[0], kernel_size=3, padding=1)
-        )
+        self.conv_in = nn.Conv2d(guiding_channels, block_out_channels[0], kernel_size=3, padding=1)
 
         self.blocks = nn.ModuleList([])
         for i in range(len(block_out_channels) - 1):
             channel_in = block_out_channels[i]
             channel_out = block_out_channels[i + 1]
-            self.blocks.append(gaussian_module(
+            self.blocks.append(
                 nn.Conv2d(channel_in, channel_in, kernel_size=3, padding=1)
-            ))
-            self.blocks.append(gaussian_module(
+            )
+            self.blocks.append(
                 nn.Conv2d(channel_in, channel_out, kernel_size=3, padding=1, stride=2)
-            ))
+            )
 
         self.conv_out = zero_module(
             nn.Conv2d(block_out_channels[-1], guiding_embedding_channels, kernel_size=3, padding=1)
@@ -44,6 +44,19 @@ class PoseGuider(ModelMixin, ConfigMixin):
                 self.act_fn = F.silu
             case _:
                 raise NotImplementedError("`activation` must be `relu`, `silu` or `swish`")
+        
+        self._initialize_weights()
+
+    # Initialization method proposed by kecol (https://github.com/kecol)
+    # See issue #3 (https://github.com/MasahideOkada/animate-anyone/issues/3)
+    def _initialize_weights(self):
+        # Initialize weights with He initialization and zero out the biases
+        for m in [self.conv_in, *self.blocks, self.conv_out]:
+            if isinstance(m, nn.Conv2d):
+                n = m.kernel_size[0] * m.kernel_size[1] * m.in_channels
+                nn.init.normal_(m.weight, mean=0.0, std=np.sqrt(2. / n))
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
 
     def forward(self, guiding: torch.FloatTensor, do_normalize: bool = False) -> torch.FloatTensor:
         if do_normalize:
