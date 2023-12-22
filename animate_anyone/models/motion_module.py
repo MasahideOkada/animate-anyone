@@ -286,6 +286,7 @@ class VersatileAttention(Attention):
         else:
             raise NotImplementedError
 
+        batch_size = hidden_states.shape[0]
         encoder_hidden_states = encoder_hidden_states
 
         if self.group_norm is not None:
@@ -302,8 +303,13 @@ class VersatileAttention(Attention):
         key = self.to_k(encoder_hidden_states)
         value = self.to_v(encoder_hidden_states)
 
-        key = self.head_to_batch_dim(key)
-        value = self.head_to_batch_dim(value)
+        inner_dim = key.shape[-1]
+        head_dim = inner_dim // self.heads
+
+        query = query.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+
+        key = key.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
+        value = value.view(batch_size, -1, self.heads, head_dim).transpose(1, 2)
 
         attention_mask = self.prepare_attention_mask(attention_mask, sequence_length, batch_size)        
         #if attention_mask is not None:
@@ -322,9 +328,15 @@ class VersatileAttention(Attention):
         #        hidden_states = self._attention(query, key, value, attention_mask)
         #    else:
         #        hidden_states = self._sliced_attention(query, key, value, sequence_length, dim, attention_mask)
-        attention_probs = self.get_attention_scores(query, key, attention_mask)
-        hidden_states = torch.bmm(attention_probs, value)
-        hidden_states = self.batch_to_head_dim(hidden_states)
+        #attention_probs = self.get_attention_scores(query, key, attention_mask)
+        #hidden_states = torch.bmm(attention_probs, value)
+        #hidden_states = self.batch_to_head_dim(hidden_states)
+        hidden_states = F.scaled_dot_product_attention(
+            query, key, value, attn_mask=attention_mask, dropout_p=0.0, is_causal=False
+        )
+
+        hidden_states = hidden_states.transpose(1, 2).reshape(batch_size, -1, self.heads * head_dim)
+        hidden_states = hidden_states.to(query.dtype)
 
         # linear proj
         hidden_states = self.to_out[0](hidden_states)
